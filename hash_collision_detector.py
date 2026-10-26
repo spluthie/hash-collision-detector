@@ -47,28 +47,86 @@ def add_state(state_list, new_state):
 state_list = []
 
 
+def detect_bad_bytes(filepath, filename1, filename2):
+
+
+    with open(os.path.join(filepath, filename1), "rb") as file1:
+        data_1 = file1.read()
+
+    with open(os.path.join(filepath, filename2), "rb") as file2:
+        data_2 = file2.read()
+
+    try:
+        data_1.decode('utf-8')
+        data_2.decode('utf-8')
+        is_text = True
+    except UnicodeDecodeError:
+        is_text = False
+
+    if is_text:
+    
+        for i in range(min(len(data_1), len(data_2))):
+            if(data_1[i] != data_2[i]):
+                print("Error on line:  ", data_1[:i].count(b'\n')+1 ," offset: ",  i, " data: ", hex(data_1[i]), " / ", hex(data_2[i]))
+    
+        if(len(data_1) > len(data_2)):
+            print("Excess data of file ", filename1)
+            for i in range(len(data_2), len(data_1)):
+                print("On line: ", data_1[:i].count(b'\n')+1, " offset: ", i, " data: ", hex(data_1[i]))
+    
+        if(len(data_1) < len(data_2)):
+            print("Excess data of file ", filename2)
+            for i in range(len(data_1), len(data_2)):
+                print("On line: ", data_2[:i].count(b'\n')+1, " offset: ", i, " data: ", hex(data_2[i]))
+    
+    else:
+            
+        print("For files: ", filename1, ", ",filename2)
+        for i in range(min(len(data_1), len(data_2))):
+            if(data_1[i] != data_2[i]):
+                print("Offset ", i, " Data: ", hex(data_1[i]), " /  ", hex(data_2[i]))
+        
+        if(len(data_1) > len(data_2)):
+            print("Excess offset of file ", filename1, ": ")
+            for i in range(len(data_2), len(data_1)):
+                print("Offset: ", i, " data:", hex(data_1[i]))
+        
+        if(len(data_1) < len(data_2)):
+            print("Excess offset of file ", filename2, ": ")
+            for i in range(len(data_1), len(data_2)):
+                print("Offset: ", i, " data:", hex(data_2[i]))
+
+
+
+
 for i in range(len(file_list)):
 
     for j in range(len(file_list)):
 
         if(i != j and (md5list[i] == md5list[j] and sha1list[i] == sha1list[j] and sha256list[i] != sha256list[j])):
             add_state(state_list, "sha1_and_md5_collision")
-            print("md5 and sha1 collision", file_list[i])
+            if(i<j):
+                print("md5 and sha1 collision between ", file_list[i], " and ", file_list[j])
+                detect_bad_bytes(folder_path, file_list[i], file_list[j])
             break
 
         elif(i != j and (md5list[i] == md5list[j] and sha1list[i] != sha1list[j])):
             add_state(state_list, "md5_collision")
-            print("md5 collision", file_list[i])
+            if(i<j):
+                print("md5 collision between ", file_list[i], " and ", file_list[j])
+                detect_bad_bytes(folder_path, file_list[i], file_list[j])
             break
 
         elif(i != j and (md5list[i] != md5list[j] and sha1list[i] == sha1list[j])):
             add_state(state_list, "sha1_collision")
-            print("sha1 collision", file_list[i])
+            if(i<j):
+                print("sha1 collision between ", file_list[i], " and ", file_list[j])
+                detect_bad_bytes(folder_path, file_list[i], file_list[j])
             break
 
         elif(i != j and sha256list[i] == sha256list[j]):
             add_state(state_list, "copy")
-            print("file copy", file_list[i])
+            print(file_list[i], " is a copy of ", file_list[j])
             break
     
     if(len(state_list)!=i+1):
